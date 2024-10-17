@@ -6,11 +6,19 @@ import (
 )
 
 // Collect applies a function to all elements in the given slice or array, returning a slice with the results in the same order of the inputs
+//
+// The input to the function is the index in the slice. The usage is similar to the sort.Slice function. Example:
+//
+//	inputs := []int{100, 200, 300}
+//	results := Collect(ctx, 0, inputs, func(i int) (int, error) {
+//	   return inputs[i] + 10
+//	})
+//	reflect.DeepEqual(results, []int{110, 210, 310}) // true
 func Collect[T any](ctx context.Context, maxParallelism int, slice any, fn func(int) (T, error)) Results[T] {
 	return CollectE(ctx, New[T](maxParallelism), slice, fn)
 }
 
-// CollectE is the same as Collect, but you can pass an existing Executor. This is the same as calling Executor.Collect
+// CollectE is the same as Collect, but you can pass an existing Executor
 func CollectE[T any](ctx context.Context, e *Executor[T], slice any, fn func(int) (T, error)) Results[T] {
 	if slice == nil {
 		return Results[T]{}
@@ -30,6 +38,16 @@ func CollectE[T any](ctx context.Context, e *Executor[T], slice any, fn func(int
 }
 
 // CollectMap applies a function to all given keys, returning a map of key -> results
+//
+// The function is called with each key, and the result is stored in the map.
+//
+// Example:
+//
+//	keys := []string{"a", "b", "c"}
+//	results := CollectMap(ctx, 0, keys, func(key string) (string, error) {
+//		return key + "!", nil
+//	})
+//	reflect.DeepEqual(results, map[string]string{"a": "a!", "b": "b!", "c": "c!"}) // true
 func CollectMap[K comparable, T any](ctx context.Context, maxParallelism int, entries []K, fn func(K) (T, error)) ResultsMap[K, T] {
 	return CollectMapE(ctx, New[T](maxParallelism), entries, fn)
 }
@@ -45,6 +63,16 @@ func CollectMapE[K comparable, T any](ctx context.Context, e *Executor[T], entri
 }
 
 // CollectMapReplace applies a function to all the keys in the given map, replacing the values with the results
+//
+// The function is called with each key, and the result is stored back in the passed map.
+//
+// Example:
+//
+//	m := map[string]*Result[string]{"a": nil, "b": nil, "c": nil}
+//	CollectMapReplace(ctx, 0, m, func(key string) (string, error) {
+//		return key + "!", nil
+//	})
+//	reflect.DeepEqual(m, map[string]*Result[string]{"a": "a!", "b": "b!", "c": "c!"}) // true
 func CollectMapReplace[K comparable, T any](ctx context.Context, maxParallelism int, m map[K]*Result[T], fn func(K) (T, error)) {
 	CollectMapReplaceE(ctx, New[T](maxParallelism), m, fn)
 }
@@ -61,7 +89,7 @@ func CollectMapReplaceE[K comparable, T any](ctx context.Context, e *Executor[T]
 	}
 }
 
-// CollectFutures is a helper function to collect results from a slice of futures
+// CollectFutures is a helper function to collect results from a slice of Futures, returning a slice of Results
 func CollectFutures[T any](ctx context.Context, futures []*Future[T]) Results[T] {
 	results := make([]*Result[T], len(futures))
 	for i, f := range futures {
@@ -70,7 +98,8 @@ func CollectFutures[T any](ctx context.Context, futures []*Future[T]) Results[T]
 	return results
 }
 
-// CollectFuturesMap is a helper function to collect results from a map of futures
+// CollectFuturesMap is a helper function to collect results from a map of futures, returning a map of Results.
+// Returned map keys are the same as the input map
 func CollectFuturesMap[K comparable, T any](ctx context.Context, futures map[K]*Future[T]) ResultsMap[K, T] {
 	results := map[K]*Result[T]{}
 	for key, future := range futures {
