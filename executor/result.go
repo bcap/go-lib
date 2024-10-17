@@ -2,19 +2,40 @@ package executor
 
 import "fmt"
 
+// Result represents the return of a function call, which is normally a value provided by the user or an error
+// Inspired by Rust's Result type
 type Result[T any] struct {
 	Value T
 	Err   error
+}
+
+func NewResult[T any](value T, err error) *Result[T] {
+	return &Result[T]{
+		Value: value,
+		Err:   err,
+	}
 }
 
 func (r *Result[T]) UnWrap() (T, error) {
 	return r.Value, r.Err
 }
 
+func (r *Result[T]) Must() T {
+	if r.Err != nil {
+		panic(r.Err)
+	}
+	return r.Value
+}
+
+func (r *Result[T]) IsOk() bool {
+	return r.Err == nil
+}
+
 func (r *Result[T]) IsError() bool {
 	return r.Err != nil
 }
 
+// Results is a slice of results
 type Results[T any] []*Result[T]
 
 func (rs Results[T]) Values() []T {
@@ -72,6 +93,65 @@ func (rs Results[T]) HasError() bool {
 	return false
 }
 
+// ResultsMap is a map of key -> result
+type ResultsMap[K comparable, T any] map[K]*Result[T]
+
+func (rs ResultsMap[K, T]) Values() map[K]T {
+	values := map[K]T{}
+	for k, r := range rs {
+		values[k] = r.Value
+	}
+	return values
+}
+
+func (rs ResultsMap[K, T]) Errors() map[K]error {
+	errors := map[K]error{}
+	for k, r := range rs {
+		errors[k] = r.Err
+	}
+	return errors
+}
+
+func (rs ResultsMap[K, T]) ValuesOnly() map[K]T {
+	values := map[K]T{}
+	for k, r := range rs {
+		if r.Err == nil {
+			values[k] = r.Value
+		}
+	}
+	return values
+}
+
+func (rs ResultsMap[K, T]) ErrorsOnly() map[K]error {
+	errors := map[K]error{}
+	for k, r := range rs {
+		if r.Err != nil {
+			errors[k] = r.Err
+		}
+	}
+	return errors
+}
+
+func (rs ResultsMap[K, T]) Stats() (int, int) {
+	var errors int
+	for _, r := range rs {
+		if r.Err != nil {
+			errors++
+		}
+	}
+	return len(rs) - errors, errors
+}
+
+func (rs ResultsMap[K, T]) HasError() bool {
+	for _, r := range rs {
+		if r.Err != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// Error
 type ResultsError struct {
 	Errors []error
 }

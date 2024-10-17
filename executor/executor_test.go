@@ -20,8 +20,7 @@ func TestExecutor(t *testing.T) {
 	length := 1000
 
 	e := New[int](parallelism)
-	e.testWg = &sync.WaitGroup{}
-	e.testWg.Add(1)
+	e.testSyncCheckpoint = make(chan struct{})
 
 	var currentParallelism atomic.Int32
 	var maxParallelismAchieved atomic.Int32
@@ -63,7 +62,7 @@ func TestExecutor(t *testing.T) {
 	}
 
 	// allow goroutines that execute the futures to run
-	e.testWg.Done()
+	close(e.testSyncCheckpoint)
 
 	// wait until all futures executions are launched
 	start := time.Now()
@@ -122,9 +121,7 @@ func TestExecutorCollect(t *testing.T) {
 		inputs[i] = i
 	}
 
-	e := New[int](parallelism)
-
-	outputs := e.Collect(context.Background(), inputs, func(i int) (int, error) {
+	outputs := Collect(context.Background(), parallelism, inputs, func(i int) (int, error) {
 		time.Sleep(5 * time.Millisecond)
 		var err error
 		// generate an error for every 10th element
@@ -176,10 +173,101 @@ func TestExecutorCollect(t *testing.T) {
 	require.True(t, outputs.HasError())
 }
 
+func TestExecutorCollectMap(t *testing.T) {
+	parallelism := 5
+	length := 1000
+
+	inputs := make([]int, length)
+	for i := range inputs {
+		inputs[i] = i
+	}
+
+	outputs := CollectMap(context.Background(), parallelism, inputs, func(k int) (int, error) {
+		time.Sleep(5 * time.Millisecond)
+		var err error
+		// generate an error for every 10th element
+		if k%10 == 0 {
+			err = fmt.Errorf("error %d", k)
+		}
+		return k, err
+	})
+
+	require.Equal(t, length, len(outputs))
+	require.Equal(t, length, len(outputs.Values()))
+	require.Equal(t, length, len(outputs.Errors()))
+	require.Equal(t, length-length/10, len(outputs.ValuesOnly()))
+	require.Equal(t, length/10, len(outputs.ErrorsOnly()))
+
+	ok, nok := outputs.Stats()
+	require.Equal(t, length-length/10, ok)
+	require.Equal(t, length/10, nok)
+
+	for i, r := range outputs {
+		if i%10 == 0 {
+			require.Error(t, r.Err)
+		} else {
+			require.NoError(t, r.Err)
+			require.Equal(t, i, r.Value)
+		}
+	}
+
+	valuesOnly := map[int]int{}
+	for k, v := range outputs.Values() {
+		if k%10 != 0 {
+			valuesOnly[k] = v
+		}
+		require.Equal(t, k, v)
+	}
+
+	errorsOnly := map[int]error{}
+	for k, v := range outputs.Errors() {
+		if k%10 == 0 {
+			require.Error(t, v)
+			errorsOnly[k] = v
+		} else {
+			require.NoError(t, v)
+		}
+	}
+
+	require.Equal(t, valuesOnly, outputs.ValuesOnly())
+	require.Equal(t, errorsOnly, outputs.ErrorsOnly())
+	require.True(t, outputs.HasError())
+}
+
+func TestExecutorCollectMapReplace(t *testing.T) {
+	parallelism := 5
+	length := 1000
+
+	m := map[int]*Result[int]{}
+	for i := 0; i < length; i++ {
+		m[i] = nil
+	}
+
+	CollectMapReplace(context.Background(), parallelism, m, func(k int) (int, error) {
+		time.Sleep(5 * time.Millisecond)
+		var err error
+		// generate an error for every 10th element
+		if k%10 == 0 {
+			err = fmt.Errorf("error %d", k)
+		}
+		return k, err
+	})
+
+	require.Equal(t, length, len(m))
+
+	for k, r := range m {
+		if k%10 == 0 {
+			require.Error(t, r.Err)
+		} else {
+			require.NoError(t, r.Err)
+		}
+		require.Equal(t, k, r.Value)
+	}
+}
+
 func TestExecutorCollectEmpty(t *testing.T) {
-	test := func(slice any) {
-		e := New[any](5)
-		outputs := e.Collect(context.Background(), slice, func(i int) (any, error) { return nil, nil })
+	testSlice := func(slice any) {
+		outputs := Collect(context.Background(), 5, slice, func(i int) (any, error) { return nil, nil })
 
 		require.Equal(t, 0, len(outputs))
 		require.Equal(t, 0, len(outputs.Values()))
@@ -193,9 +281,27 @@ func TestExecutorCollectEmpty(t *testing.T) {
 		require.False(t, outputs.HasError())
 	}
 
-	test([0]any{})
-	test([]any{})
-	test(nil)
+	testMap := func(slice []any) {
+		outputs := CollectMap(context.Background(), 5, slice, func(k any) (any, error) { return nil, nil })
+
+		require.Equal(t, 0, len(outputs))
+		require.Equal(t, 0, len(outputs.Values()))
+		require.Equal(t, 0, len(outputs.Errors()))
+		require.Equal(t, 0, len(outputs.ValuesOnly()))
+		require.Equal(t, 0, len(outputs.ErrorsOnly()))
+
+		ok, nok := outputs.Stats()
+		require.Equal(t, 0, ok)
+		require.Equal(t, 0, nok)
+		require.False(t, outputs.HasError())
+	}
+
+	testSlice([0]any{})
+	testSlice([]any{})
+	testSlice(nil)
+
+	testMap(nil)
+	testMap([]any{})
 }
 
 func TestExecutorCollectPanicsOnBadArg(t *testing.T) {
@@ -204,8 +310,7 @@ func TestExecutorCollectPanicsOnBadArg(t *testing.T) {
 			r := recover()
 			require.Equal(t, "expected a slice or array", r)
 		}()
-		e := New[any](5)
-		e.Collect(context.Background(), input, func(i int) (any, error) { return nil, nil })
+		Collect(context.Background(), 5, input, func(i int) (any, error) { return nil, nil })
 	}
 
 	test(1)
