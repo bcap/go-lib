@@ -19,7 +19,7 @@ func main() {
 	data, err := numstat.LoadData(ctx, os.Stdin)
 	panicOnErr(err)
 
-	stats := numstat.CalcStats(data, numBuckets)
+	stats := numstat.CalcStatsUnsorted(data, numBuckets)
 	panicOnErr(stats.Print(os.Stdout))
 }
 

@@ -35,24 +35,37 @@ type Bucket struct {
 	Entries int
 }
 
-func CalcStats(data []float64, numBuckets int) Stats {
-	if len(data) == 0 {
+// Calculate statistics for given unsorted data.
+// Data is copied and sorted internally before calculating statistics.
+// Use CalcStatsSorted if data is already sorted.
+func CalcStatsUnsorted(unsortedData []float64, numBuckets int) Stats {
+	sortedData := make([]float64, len(unsortedData))
+	copy(sortedData, unsortedData)
+	sort.Float64s(sortedData)
+	return CalcStatsSorted(sortedData, numBuckets)
+}
+
+// Calculate statistics for given data.
+// Data MUST be sorted before calling this function.
+// While the function will not panic on unsorted data, it will produce incorrect results.
+func CalcStatsSorted(sortedData []float64, numBuckets int) Stats {
+	if len(sortedData) == 0 {
 		return Stats{}
 	}
 
 	stats := Stats{
-		Entries: len(data),
-		Min:     data[0],
-		Max:     data[len(data)-1],
+		Entries: len(sortedData),
+		Min:     sortedData[0],
+		Max:     sortedData[len(sortedData)-1],
 	}
 
 	//
 	// First iteration for Sum, Average and Uniq values
 	//
-	lengthF := float64(len(data))
+	lengthF := float64(len(sortedData))
 	stats.Sum = big.NewFloat(0)
 	var lastDatum float64
-	for idx, datum := range data {
+	for idx, datum := range sortedData {
 		// sum
 		stats.Sum.Add(stats.Sum, big.NewFloat(datum))
 
@@ -83,7 +96,7 @@ func CalcStats(data []float64, numBuckets int) Stats {
 			stats.Buckets[idx].Start = stats.Min + float64(idx)*bucketRange
 			stats.Buckets[idx].End = stats.Min + float64(idx+1)*bucketRange
 		}
-		for _, datum := range data {
+		for _, datum := range sortedData {
 			// bucketing
 			if numBuckets > 0 {
 				bucketIdx := int((datum - stats.Min) / bucketRange)
@@ -98,7 +111,7 @@ func CalcStats(data []float64, numBuckets int) Stats {
 		}
 	} else {
 		// bucketing disabled,  calculate only variance then
-		for _, datum := range data {
+		for _, datum := range sortedData {
 			stats.Var += math.Pow(datum-stats.Avg, 2) / lengthF
 		}
 	}
@@ -131,7 +144,7 @@ func CalcStats(data []float64, numBuckets int) Stats {
 	stats.Percentiles = map[float64]float64{}
 	for _, percentile := range applyPercentiles {
 		idx := percentile / 100 * (lengthF - 1)
-		stats.Percentiles[percentile] = data[int(math.Round(idx))]
+		stats.Percentiles[percentile] = sortedData[int(math.Round(idx))]
 	}
 
 	return stats
