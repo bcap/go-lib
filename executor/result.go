@@ -173,3 +173,15 @@ func (rs Results[T]) Error() error {
 	}
 	return &ResultsError{Errors: errors}
 }
+
+func (rs ResultsMap[K, T]) Error() error {
+	errorsMap := rs.ErrorsOnly()
+	if len(errorsMap) == 0 {
+		return nil
+	}
+	errors := make([]error, 0, len(errorsMap))
+	for _, err := range errorsMap {
+		errors = append(errors, err)
+	}
+	return &ResultsError{Errors: errors}
+}
