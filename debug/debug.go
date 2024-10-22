@@ -31,7 +31,7 @@ func load() bool {
 }
 
 func Breakpoint(dumpVar any, stop bool) {
-	if stop {
+	if !stop {
 		return
 	}
 	fmt.Fprintln(os.Stderr, "-------------------- Breakpoint --------------------")
