@@ -7,13 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCollection(t *testing.T) {
+func TestSlice(t *testing.T) {
 	s := []int{1, 2, 3, 4, 5}
 	r := []int{5, 4, 3, 2, 1}
-
-	//
-	// Slice
-	//
 
 	assert.Equal(t, r, ReverseSlice(s))
 	assert.Equal(t, s, ReverseSlice(r))
@@ -24,9 +20,14 @@ func TestCollection(t *testing.T) {
 	assert.Equal(t, s, SortedSlice(r, func(a, b int) bool { return a < b }))
 	assert.Equal(t, len(s), cap(SortedSlice(r, func(a, b int) bool { return a < b })))
 
-	//
-	// Map
-	//
+	assert.Equal(t, s, JoinSlices(s))
+	assert.Equal(t, []int{1, 2, 3, 4, 5, 5, 4, 3, 2, 1}, JoinSlices(s, r))
+	assert.Equal(t, []int{1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1}, JoinSlices(s, s, r))
+}
+
+func TestMap(t *testing.T) {
+	s := []int{1, 2, 3, 4, 5}
+	r := []int{5, 4, 3, 2, 1}
 
 	m := SliceToMap(s, func(v int) (int, int) { return v, v })
 
@@ -63,16 +64,43 @@ func TestCollection(t *testing.T) {
 	assert.Equal(t, r, SortedMapKeys(m, func(a, b *MapEntry[int, int]) bool { return a.K > b.K }))
 	assert.Equal(t, r, SortedMapValues(m, func(a, b *MapEntry[int, int]) bool { return a.V > b.V }))
 
-	//
-	// Set
-	//
+	assert.Equal(t,
+		map[string]int{"a": 1, "b": 2, "c": 3},
+		JoinMaps(
+			map[string]int{"a": 1},
+			map[string]int{"b": 2},
+			map[string]int{"c": 3},
+		),
+	)
+	assert.Equal(t,
+		map[string]int{"a": 1, "b": 2, "c": 3},
+		JoinMaps(
+			map[string]int{"a": 10, "b": 2},
+			map[string]int{"a": 1},
+			map[string]int{"c": 3},
+		),
+	)
+	assert.Equal(t,
+		map[string]int{"a": 10, "b": 2, "c": 3},
+		JoinMaps(
+			map[string]int{"a": 1},
+			map[string]int{"a": 10, "b": 2},
+			map[string]int{"c": 3},
+		),
+	)
+}
 
-	set := SliceToSet(s)
+func TestSet(t *testing.T) {
+	s := []int{1, 2, 3, 4, 5}
+	r := []int{5, 4, 3, 2, 1}
+
+	set := SlicesToSet(s)
 	assert.Equal(t, len(s), len(set))
 	for i := 1; i <= len(s); i++ {
 		v, ok := set[i]
 		assert.True(t, ok)
 		assert.Equal(t, struct{}{}, v)
 	}
-	assert.Equal(t, set, SliceToSet(r))
+	assert.Equal(t, set, SlicesToSet(r))
+	assert.Equal(t, set, SlicesToSet(s, r))
 }

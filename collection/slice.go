@@ -39,10 +39,26 @@ func SliceToMap[K comparable, V any](slice []V, mapFn func(V) (K, V)) map[K]V {
 	return m
 }
 
-func SliceToSet[V comparable](slice []V) map[V]struct{} {
+func SlicesToSet[V comparable](slices ...[]V) map[V]struct{} {
 	set := map[V]struct{}{}
-	for _, v := range slice {
-		set[v] = struct{}{}
+	for _, slice := range slices {
+		for _, v := range slice {
+			set[v] = struct{}{}
+		}
 	}
 	return set
+}
+
+func JoinSlices[T any](slices ...[]T) []T {
+	var totalLen int
+	for _, slice := range slices {
+		totalLen += len(slice)
+	}
+	merged := make([]T, totalLen)
+	idx := 0
+	for _, slice := range slices {
+		copy(merged[idx:], slice)
+		idx += len(slice)
+	}
+	return merged
 }

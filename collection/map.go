@@ -81,3 +81,17 @@ func SortedMapKeys[K comparable, V any](m map[K]V, less func(a *MapEntry[K, V], 
 func SortedMapValues[K comparable, V any](m map[K]V, less func(a *MapEntry[K, V], b *MapEntry[K, V]) bool) []V {
 	return SortedMap(m, less).Values()
 }
+
+func JoinMaps[K comparable, V any](maps ...map[K]V) map[K]V {
+	var totalLength int
+	for _, m := range maps {
+		totalLength += len(m)
+	}
+	result := make(map[K]V, totalLength)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
