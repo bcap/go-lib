@@ -25,6 +25,23 @@ func MapValues[K comparable, V any](m map[K]V) []V {
 	return slice
 }
 
+func ReMapKeys[K1, K2 comparable, V any](m map[K1]V, mapFn func(K1) K2) map[K2]V {
+	result := map[K2]V{}
+	for k1, v := range m {
+		result[mapFn(k1)] = v
+	}
+	return result
+}
+
+func ReMap[K1, K2 comparable, V1, V2 any](m map[K1]V1, mapFn func(K1, V1) (K2, V2)) map[K2]V2 {
+	result := map[K2]V2{}
+	for k1, v1 := range m {
+		k2, v2 := mapFn(k1, v1)
+		result[k2] = v2
+	}
+	return result
+}
+
 type MapEntriesS[K comparable, V any] []MapEntry[K, V]
 
 func (s MapEntriesS[K, V]) Keys() []K {

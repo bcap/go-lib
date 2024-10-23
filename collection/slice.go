@@ -30,10 +30,19 @@ func SortSlice[V any](slice []V, less func(a, b V) bool) {
 	sort.Slice(slice, func(i, j int) bool { return less(slice[i], slice[j]) })
 }
 
-func SliceToMap[K comparable, V any](slice []V, keyFn func(V) K) map[K]V {
+func SliceToMap[K comparable, V any](slice []V, mapFn func(V) (K, V)) map[K]V {
 	m := map[K]V{}
 	for _, v := range slice {
-		m[keyFn(v)] = v
+		k, v := mapFn(v)
+		m[k] = v
 	}
 	return m
+}
+
+func SliceToSet[V comparable](slice []V) map[V]struct{} {
+	set := map[V]struct{}{}
+	for _, v := range slice {
+		set[v] = struct{}{}
+	}
+	return set
 }
