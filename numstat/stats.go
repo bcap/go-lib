@@ -46,7 +46,7 @@ func CalcStatsUnsorted(unsortedData []float64, numBuckets int) Stats {
 }
 
 // Calculate statistics for given data.
-// Data MUST be sorted before calling this function.
+// Data MUST be sorted from lowest to highest before calling this function.
 // While the function will not panic on unsorted data, it will produce incorrect results.
 func CalcStatsSorted(sortedData []float64, numBuckets int) Stats {
 	if len(sortedData) == 0 {
