@@ -7,7 +7,7 @@ import (
 )
 
 func TestMagnitude(t *testing.T) {
-	test := func(num float64, expectedDigits int, expectedMag string) {
+	test := func(num int64, expectedDigits int, expectedMag string) {
 		digits, mag := Magnitude(num)
 		require.Equal(t, expectedDigits, digits)
 		require.Equal(t, expectedMag, mag)
@@ -19,8 +19,6 @@ func TestMagnitude(t *testing.T) {
 	}
 
 	test(0, 1, "0")
-	test(0.1, 1, "1s")
-	test(0.00001, 1, "1s")
 	test(1, 1, "1s")
 	test(2, 1, "1s")
 	test(9, 1, "1s")
