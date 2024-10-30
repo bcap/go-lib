@@ -12,9 +12,11 @@ func Monitor(ctx context.Context, interval time.Duration, fn func(timePassed tim
 	start := time.Now()
 	go func() {
 		run := true
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 		for run {
 			select {
-			case <-time.After(interval):
+			case <-ticker.C:
 			case <-ctx.Done():
 				run = false
 			}
