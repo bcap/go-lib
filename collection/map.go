@@ -4,6 +4,14 @@ import (
 	"sort"
 )
 
+func CopyMap[K comparable, V any](m map[K]V) map[K]V {
+	result := map[K]V{}
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
 func MapMap[K1, K2 comparable, V1, V2 any](m map[K1]V1, mapFn func(K1, V1) (K2, V2)) map[K2]V2 {
 	result := map[K2]V2{}
 	for k1, v1 := range m {
