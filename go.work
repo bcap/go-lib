@@ -1,0 +1,15 @@
+go 1.23.2
+
+use (
+	./collection
+	./debug
+	./executor
+	./log
+	./math
+	./monitor
+	./namedvalue
+	./numstat
+	./safe
+	./strings
+	./unit
+)
