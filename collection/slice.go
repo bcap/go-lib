@@ -144,25 +144,47 @@ func FilterSlice[T any](slice []T, filterFn func(idx int, v T) bool) []T {
 			result = append(result, v)
 		}
 	}
-	return result
+	return ClipSlice(result)
 }
 
 func FilterSliceI[T any](slice []T, filterFn func(idx int) bool) []T {
-	result := []T{}
+	result := make([]T, 0, len(slice))
 	for idx, v := range slice {
 		if filterFn(idx) {
 			result = append(result, v)
 		}
 	}
-	return result
+	return ClipSlice(result)
 }
 
 func FilterSliceV[T any](slice []T, filterFn func(v T) bool) []T {
-	result := []T{}
+	result := make([]T, 0, len(slice))
 	for _, v := range slice {
 		if filterFn(v) {
 			result = append(result, v)
 		}
 	}
-	return result
+	return ClipSlice(result)
+}
+
+func FlattenSlice2[T any](slice [][]T) []T {
+	var result []T = make([]T, 0, len(slice))
+	for _, item := range slice {
+		result = append(result, item...)
+	}
+	return ClipSlice(result)
+}
+
+func FlattenSlice3[T any](slice [][][]T) []T {
+	var result []T = make([]T, 0, len(slice))
+	for _, item := range slice {
+		for _, item := range item {
+			result = append(result, item...)
+		}
+	}
+	return ClipSlice(result)
+}
+
+func ClipSlice[T any](slice []T) []T {
+	return slice[:len(slice):len(slice)]
 }

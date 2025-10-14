@@ -65,3 +65,38 @@ func TestSlice(t *testing.T) {
 	require.Equal(t, 15.0, ReduceSliceI(s, func(acc float64, idx int) float64 { return acc + float64(s[idx]) }))
 	require.Equal(t, 15.0, ReduceSliceV(s, func(acc float64, v int) float64 { return acc + float64(v) }))
 }
+
+func TestSliceFlatten(t *testing.T) {
+	s := [][]int{
+		{},
+		{1, 2, 3},
+		{4, 5},
+		{},
+		{6},
+	}
+	require.Equal(t, []int{1, 2, 3, 4, 5, 6}, FlattenSlice2(s))
+
+	s2 := [][][]int{
+		{
+			{1, 2},
+			{3},
+		},
+		{},
+		{
+			{},
+			{},
+		},
+		{
+			{4, 5},
+			{},
+		},
+		{
+			{},
+			{6},
+		},
+	}
+	require.Equal(t, []int{1, 2, 3, 4, 5, 6}, FlattenSlice3(s2))
+
+	require.Equal(t, [][]int{{1, 2}, {3}, {}, {}, {4, 5}, {}, {}, {6}}, FlattenSlice2(s2))
+	require.Equal(t, []int{1, 2, 3, 4, 5, 6}, FlattenSlice2(FlattenSlice2(s2)))
+}
