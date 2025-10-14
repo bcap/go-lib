@@ -1,4 +1,4 @@
-package executor
+package result
 
 import "fmt"
 
@@ -27,6 +27,10 @@ func (r *Result[T]) Must() T {
 	return r.Value
 }
 
+func (r *Result[T]) Error() error {
+	return r.Err
+}
+
 func (r *Result[T]) IsOk() bool {
 	return r.Err == nil
 }
@@ -38,20 +42,23 @@ func (r *Result[T]) IsError() bool {
 // Results is a slice of results
 type Results[T any] []*Result[T]
 
+func (rs Results[T]) Unwrap() ([]T, error) {
+	return rs.Values(), rs.Error()
+}
+
+func (rs Results[T]) Must() []T {
+	if err := rs.Error(); err != nil {
+		panic(err)
+	}
+	return rs.Values()
+}
+
 func (rs Results[T]) Values() []T {
 	values := make([]T, len(rs))
 	for i, r := range rs {
 		values[i] = r.Value
 	}
 	return values
-}
-
-func (rs Results[T]) Errors() []error {
-	errors := make([]error, len(rs))
-	for i, r := range rs {
-		errors[i] = r.Err
-	}
-	return errors
 }
 
 func (rs Results[T]) ValuesOnly() []T {
@@ -82,6 +89,14 @@ func (rs Results[T]) Stats() (int, int) {
 		}
 	}
 	return len(rs) - errors, errors
+}
+
+func (rs Results[T]) Errors() []error {
+	errors := make([]error, len(rs))
+	for i, r := range rs {
+		errors[i] = r.Err
+	}
+	return errors
 }
 
 func (rs Results[T]) HasError() bool {
@@ -151,6 +166,18 @@ func (rs ResultsMap[K, T]) HasError() bool {
 	return false
 }
 
+func (rs ResultsMap[K, T]) Error() error {
+	errorsMap := rs.ErrorsOnly()
+	if len(errorsMap) == 0 {
+		return nil
+	}
+	errors := make([]error, 0, len(errorsMap))
+	for _, err := range errorsMap {
+		errors = append(errors, err)
+	}
+	return &ResultsError{Errors: errors}
+}
+
 // Error
 type ResultsError struct {
 	Errors []error
@@ -170,18 +197,6 @@ func (rs Results[T]) Error() error {
 	errors := rs.ErrorsOnly()
 	if len(errors) == 0 {
 		return nil
-	}
-	return &ResultsError{Errors: errors}
-}
-
-func (rs ResultsMap[K, T]) Error() error {
-	errorsMap := rs.ErrorsOnly()
-	if len(errorsMap) == 0 {
-		return nil
-	}
-	errors := make([]error, 0, len(errorsMap))
-	for _, err := range errorsMap {
-		errors = append(errors, err)
 	}
 	return &ResultsError{Errors: errors}
 }

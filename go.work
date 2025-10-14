@@ -10,6 +10,7 @@ use (
 	./namedvalue
 	./numstat
 	./pool
+	./result
 	./safe
 	./strings
 	./unit
