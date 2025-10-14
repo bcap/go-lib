@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bcap/go-lib/result"
 	"github.com/stretchr/testify/require"
 )
 
@@ -238,7 +239,7 @@ func TestExecutorCollectMapReplace(t *testing.T) {
 	parallelism := 5
 	length := 1000
 
-	m := map[int]*Result[int]{}
+	m := map[int]*result.Result[int]{}
 	for i := 0; i < length; i++ {
 		m[i] = nil
 	}

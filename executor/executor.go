@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/bcap/go-lib/result"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -65,7 +66,7 @@ func (e *Executor[T]) Submit(ctx context.Context, fn func() (T, error)) *Future[
 		}
 		if e.maxParallelism > 0 {
 			if err := e.semaphore.Acquire(ctx, 1); err != nil {
-				future.resultC <- &Result[T]{Err: err}
+				future.resultC <- &result.Result[T]{Err: err}
 				return
 			}
 		}
@@ -73,7 +74,7 @@ func (e *Executor[T]) Submit(ctx context.Context, fn func() (T, error)) *Future[
 		// Critical Section Start | run the function
 		e.inFlight.Add(1)
 		future.setState(Executing)
-		result, err := fn()
+		res, err := fn()
 
 		// Critical Section Stop | allow the next function to run
 		e.inFlight.Add(-1)
@@ -82,7 +83,7 @@ func (e *Executor[T]) Submit(ctx context.Context, fn func() (T, error)) *Future[
 		}
 
 		// send results
-		future.resultC <- &Result[T]{Value: result, Err: err}
+		future.resultC <- &result.Result[T]{Value: res, Err: err}
 		future.setState(ResultReady)
 	}()
 	return future

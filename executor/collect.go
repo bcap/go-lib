@@ -3,6 +3,8 @@ package executor
 import (
 	"context"
 	"reflect"
+
+	"github.com/bcap/go-lib/result"
 )
 
 // Collect applies a function to all elements in the given slice or array, returning a slice with the results in the same order of the inputs
@@ -14,14 +16,14 @@ import (
 //	   return inputs[i] + 10
 //	})
 //	reflect.DeepEqual(results, []int{110, 210, 310}) // true
-func Collect[T any](ctx context.Context, maxParallelism int, slice any, fn func(int) (T, error)) Results[T] {
+func Collect[T any](ctx context.Context, maxParallelism int, slice any, fn func(int) (T, error)) result.Results[T] {
 	return CollectE(ctx, New[T](maxParallelism), slice, fn)
 }
 
 // CollectE is the same as Collect, but you can pass an existing Executor
-func CollectE[T any](ctx context.Context, e *Executor[T], slice any, fn func(int) (T, error)) Results[T] {
+func CollectE[T any](ctx context.Context, e *Executor[T], slice any, fn func(int) (T, error)) result.Results[T] {
 	if slice == nil {
-		return Results[T]{}
+		return result.Results[T]{}
 	}
 	sliceVal := reflect.ValueOf(slice)
 	sliceKind := sliceVal.Kind()
@@ -48,13 +50,13 @@ func CollectE[T any](ctx context.Context, e *Executor[T], slice any, fn func(int
 //		return key + "!", nil
 //	})
 //	reflect.DeepEqual(results, map[string]string{"a": "a!", "b": "b!", "c": "c!"}) // true
-func CollectMap[K comparable, T any](ctx context.Context, maxParallelism int, entries []K, fn func(K) (T, error)) ResultsMap[K, T] {
+func CollectMap[K comparable, T any](ctx context.Context, maxParallelism int, entries []K, fn func(K) (T, error)) result.ResultsMap[K, T] {
 	return CollectMapE(ctx, New[T](maxParallelism), entries, fn)
 }
 
 // CollectMapE is the same as CollectMap, but you can pass an existing Executor instance
-func CollectMapE[K comparable, T any](ctx context.Context, e *Executor[T], entries []K, fn func(K) (T, error)) ResultsMap[K, T] {
-	results := map[K]*Result[T]{}
+func CollectMapE[K comparable, T any](ctx context.Context, e *Executor[T], entries []K, fn func(K) (T, error)) result.ResultsMap[K, T] {
+	results := map[K]*result.Result[T]{}
 	for _, key := range entries {
 		results[key] = nil
 	}
@@ -73,12 +75,12 @@ func CollectMapE[K comparable, T any](ctx context.Context, e *Executor[T], entri
 //		return key + "!", nil
 //	})
 //	reflect.DeepEqual(m, map[string]*Result[string]{"a": "a!", "b": "b!", "c": "c!"}) // true
-func CollectMapReplace[K comparable, T any](ctx context.Context, maxParallelism int, m map[K]*Result[T], fn func(K) (T, error)) {
+func CollectMapReplace[K comparable, T any](ctx context.Context, maxParallelism int, m map[K]*result.Result[T], fn func(K) (T, error)) {
 	CollectMapReplaceE(ctx, New[T](maxParallelism), m, fn)
 }
 
 // CollectMapReplaceE is the same as CollectMapReplace, but you can pass an existing Executor instance
-func CollectMapReplaceE[K comparable, T any](ctx context.Context, e *Executor[T], m map[K]*Result[T], fn func(K) (T, error)) {
+func CollectMapReplaceE[K comparable, T any](ctx context.Context, e *Executor[T], m map[K]*result.Result[T], fn func(K) (T, error)) {
 	futures := map[K]*Future[T]{}
 	for key := range m {
 		key := key
@@ -90,8 +92,8 @@ func CollectMapReplaceE[K comparable, T any](ctx context.Context, e *Executor[T]
 }
 
 // CollectFutures is a helper function to collect results from a slice of Futures, returning a slice of Results
-func CollectFutures[T any](ctx context.Context, futures []*Future[T]) Results[T] {
-	results := make([]*Result[T], len(futures))
+func CollectFutures[T any](ctx context.Context, futures []*Future[T]) result.Results[T] {
+	results := make([]*result.Result[T], len(futures))
 	for i, f := range futures {
 		results[i] = f.Get(ctx)
 	}
@@ -100,8 +102,8 @@ func CollectFutures[T any](ctx context.Context, futures []*Future[T]) Results[T]
 
 // CollectFuturesMap is a helper function to collect results from a map of futures, returning a map of Results.
 // Returned map keys are the same as the input map
-func CollectFuturesMap[K comparable, T any](ctx context.Context, futures map[K]*Future[T]) ResultsMap[K, T] {
-	results := map[K]*Result[T]{}
+func CollectFuturesMap[K comparable, T any](ctx context.Context, futures map[K]*Future[T]) result.ResultsMap[K, T] {
+	results := map[K]*result.Result[T]{}
 	for key, future := range futures {
 		results[key] = future.Get(ctx)
 	}
