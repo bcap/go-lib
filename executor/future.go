@@ -94,7 +94,7 @@ func (f *Future[T]) IsDone() bool {
 
 type Futures[T any] []*Future[T]
 
-func (fs Futures[T]) Submit(ctx context.Context, e *Executor[T], fn func() (T, error)) *Future[T] {
+func (fs *Futures[T]) Submit(ctx context.Context, e *Executor[T], fn func() (T, error)) *Future[T] {
 	future := e.Submit(ctx, fn)
 	fs.Add(future)
 	return future
