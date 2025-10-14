@@ -1,6 +1,6 @@
 module github.com/bcap/go-lib/collection
 
-go 1.23.2
+go 1.25.2
 
 require github.com/stretchr/testify v1.9.0
 

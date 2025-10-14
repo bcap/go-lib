@@ -1,4 +1,4 @@
-go 1.23.2
+go 1.25.2
 
 use (
 	./collection
@@ -9,6 +9,7 @@ use (
 	./monitor
 	./namedvalue
 	./numstat
+	./pool
 	./safe
 	./strings
 	./unit
