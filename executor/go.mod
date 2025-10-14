@@ -3,7 +3,7 @@ module github.com/bcap/go-lib/executor
 go 1.25.2
 
 require (
-	github.com/bcap/go-lib/result v0.1.0
+	github.com/bcap/go-lib/result v0.1.1
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sync v0.8.0
 )
